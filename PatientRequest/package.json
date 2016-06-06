@@ -1,0 +1,10 @@
+{
+  "name": "PatientRequest",
+  "version": "1.0.0",
+  "description": "Request a nurse to bring something",
+  "main": "index.js",
+  "author": "Team Espresso",
+  "dependencies": {
+    "alexa-app": "^2.1.0"
+  }
+}

@@ -1,0 +1,13 @@
+RequestIntent I need a {Item}
+RequestIntent I want a {Item}
+RequestIntent I want an {Item}
+RequestIntent I would like a {Item}
+RequestIntent I would like an {Item}
+RequestIntent get me a {Item}
+RequestIntent get me an {Item}
+RequestIntent bring me a {Item}
+RequestIntent bring me an {Item}
+RequestIntent please get me a {Item}
+RequestIntent please get me an {Item}
+RequestIntent please bring me a {Item}
+RequestIntent please bring me an {Item}

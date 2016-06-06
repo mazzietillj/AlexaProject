@@ -1,0 +1,6 @@
+water
+toothbrush
+towel
+blanket
+food
+pillow
