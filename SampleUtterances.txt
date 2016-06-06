@@ -1,5 +1,0 @@
-MenuReader what is the menu
-MenuReader read me the menu
-MenuReader what can I have to eat
-MenuReader what's on the menu
-
