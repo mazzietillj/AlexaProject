@@ -5,7 +5,21 @@ app.launch(function(req,res) {
 	res.say("Hello World!!");
 });
 
+var mysql = require("mysql");
+var con = mysql.createConnection({
+	host: "db4free.net",
+	user: "upmcsa",
+	password: "drowssap",
+	database: "alexadb"
+});
 
+con.connect(function(err){
+  if(err){
+    console.log('Error connecting to Db');
+    return;
+  }
+  console.log('Connection established');
+});
 //var APP_ID = undefined; //because this broke last time
 
 //var http = require('http');
@@ -37,6 +51,16 @@ app.intent('RequestIntent', {
                     "RequestIntent please bring me an {Item}"]
 	},function(req,res) {
 		res.say('A nurse is coming with a '+req.slot('Item'));
+		var os = require("os");
+		var host = os.hostname();
+		console.log(os.hostname());
+		var item = req.slot('Item');
+		var request = { patient: 'Winnie', room: '1200', msg: item + ' requested.' };
+		con.query('INSERT INTO PatientRequestsTable SET ?', request, function(err,res){
+  	if(err) throw err;
+
+  console.log('Last insert ID:', res.insertId);
+});
 	}
 );
 
