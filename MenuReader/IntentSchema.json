@@ -1,8 +1,11 @@
 {
   "intents": [
     {
-      "intent": "MenuIntent",
+      "intent": "MenuIntent"
 
+    },
+    {
+      "intent": "CategoryIncludedIntent"
     },
    {
       "intent": "AMAZON.HelpIntent"

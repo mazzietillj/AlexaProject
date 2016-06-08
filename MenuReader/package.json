@@ -1,0 +1,10 @@
+{
+  "name": "MenuReader",
+  "version": "1.0.0",
+  "description": "Read off the menu to the user",
+  "main": "index.js",
+  "author": "RITigers",
+  "dependencies": {
+    "alexa-app": "^2.1.0"
+  }
+}
