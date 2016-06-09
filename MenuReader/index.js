@@ -1,109 +1,219 @@
 var alexa = require('alexa-app');
+var fs = require('fs');
+var xml2js = require('xml2js');
+var utterances = require('/Users/zacharc/Desktop/github/alexa-app-server/examples/apps/MenuReader/utterances.js');
+
 module.change_code = 1;
 var app = new alexa.app('MenuReader');
-
-
-
+var parser = new xml2js.Parser();
+var xmlFilePath = "/Users/zacharc/Desktop/github/alexa-app-server/examples/apps/MenuReader/menu.xml";
+var xmlContent;   //content of above file
 
 /**
  * MenuReader is a child of AlexaSkill.
  * To read more about inheritance in JavaScript, see the link below.
  *
  */
-// var HowTo = function () {
-//     AlexaSkill.call(this, APP_ID);
-// };
 
-var LIST_OF_CATEGORIES = ["breakfast", "lunch", "dinner", "beverages", "dessert"];
-var BREAKFAST_SUBCATEGORIES = [];
-var LUNCHDINNER_SUBCATEGORIES = [];
-var BEVERAGE_SUBCATEGORIES = [];
-var DESSERT_SUBCATEGORIES = [];
-// to keep track of what previous choice was made
-var categoryChoice = -1;
-var subCategoryChoice = -1;
+var category = "";
 var stage = 0;
 function isInArray(element, list){
   return list.indexOf(element) > -1; //returns true or false
 }
 
+app.launch(function(req, res){
+  xmlContent = fs.readFileSync(xmlFilePath, 'utf8');
+  console.log("launch!");
+  res.say("application launched").shouldEndSession(false);
+});
+
 app.intent('MenuIntent', {
   "slots":{},
-  "utterances": ["MenuIntent what is the menu",
-                "MenuIntent read me the menu",
-                "MenuIntent what can I have to eat",
-                "MenuIntent what's on the menu"]//so the user is able to go back to the top of the tree of questions
+  "utterances": utterances.menuIntentUtterances//so the user is able to go back to the top of the tree of questions
 }, function(req, res){
-      res.say('Would you like to hear the menu for breakfast, lunch, dinner, beverages, or dessert?');
+      parser.parseString(xmlContent, function(err, result){
+        var categories = "";
+        var curCategory;
+        var numCategories = result.menu.category.length;
+        for(var i = 0; i < numCategories; i++){
+          curCat = result.menu.category[i];
+          categories += curCat.name[0].toLowerCase();
+          if(i == numCategories - 2){
+            if(numCategories == 2){
+              categories += " or ";
+            }
+            else{
+                categories += ", or ";
+            }
+          }
+          else if(i != numCategories - 1){
+            categories += ", ";
+          }
+        } //end category traversing for loop
+
+        res.say('Would you like to hear the menu for ' + categories + '?');
+      }); //end parsing
+
       stage = 1;
-});
+}); //end MenuIntent
 
 app.intent('CategoryIncludedIntent', {
-  "slots":{"Category":"LIST_OF_CATEGORIES"},
-  "utterances": ["{Category}",
-                  "CategoryIncludedIntent what's for {Category}",
-                  "CategoryIncludedIntent what is for {Category}",
-                  "CategoryIncludedIntent read me the menu for  {Category}",
-                  "CategoryIncludedIntent read me the {Category}"]
+  "slots":{"Category": "string"},
+  "utterances": utterances.categoryIntentUtterances
 }, function(req, res){
-    var category = req.slot("Category");
-    if(isInArray(category, LIST_OF_CATEGORIES)){
-      if(category == "breakfast"){
-        res.say("For breakfast, do you want to hear about juice, cereal, or pancakes?");
-      }else if(category == "lunch" || category == "dinner"){
-        res.say("For lunch or dinner, do you want to hear about burgers, pizza, or stir fry");
-      }else if(category == "beverages"){
-        res.say("To drink, would you like to hear about coffee, tea, or soft drinks");
-      }else if(category == "dessert"){
-        res.say("For dessert, would you like to hear about cake, pie, or ice cream");
-      }else{
-        res.say("I didn't recognize that category please try again.");
-      }
-      categoryChoice = LIST_OF_CATEGORIES.indexOf(category);//set the choice to the index of the category picked
-      if(categoryChoice != -1){
+
+    category = req.slot("Category");
+    parser.parseString(xmlContent, function(err, result){
+      var curCategory;
+      var curSub;
+      var subcategories = "";
+      var found = false;
+
+
+      for(var i = 0; i < result.menu.category.length; i++){
+        curCategory = result.menu.category[i];
+        if(curCategory.name[0].toLowerCase() == category){
+          found = true;
+
+          try{
+            var numSubCat = curCategory.subcategory.length;
+            for(var j = 0; j < numSubCat; j++){
+              curSub = result.menu.category[i].subcategory[j];
+              subcategories += curSub.name[0].toLowerCase();
+
+
+              //handle commas
+              if(j == numSubCat - 2){
+                if(numSubCat == 2){
+                  subcategories += " or ";
+                }
+                else{
+                    subcategories += ", or ";
+                }
+              }
+              else if(j != numSubCat - 1){
+                subcategories += ", ";
+              }
+
+            } //end for traversing subcategories
+          } //end try
+
+          catch(err){
+            res.say("There are no " + category + " subcategories on the menu. Please try again.");
+            found = false;
+          }
+
+        } //end if category = current
+      } //end for traversing categories
+
+
+      if(found){
+        res.say("For " + category + ", do you want to hear about " + subcategories + "?");
         stage = 2;
       }
-    }else{
-      res.say("I didn't reconize that category, please try again.");
-    }
-   }
-);
+      else{
+        res.say("I didn't recognize that category please try again.");
+      }
+
+    }); //end parse
+
+  }
+);  //end CategoryIncludedIntent
+
 
 app.intent('SubcategoryIntent', {
-  "slots":{"Subcategory":"LIST_OF_SUBCATEGORIES"},
-  "utterances": ["SubcategoryIntent {Subcategory}",
-                "SubcategoryIntent what are the options for {Subcategory}",
-                "SubcategoryIntent what are the {Subcategory} choices",
-                "SubcategoryIntent I want to hear about {Subcategory}"]
+  "slots":{"Subcategory": "string"},
+  "utterances": utterances.subcategoryIntentUtterances
 }, function(req, res){
     if(stage == 2){
-      var subcategory = req.slot("Subcategory");
-      if(subcategory != undefined){
-        if(subcategory == "burgers"){
-          res.say('The burger options are ketchup, pickles, and mustard. What subcategory would you like to hear?');
-          stage = 2;
+      parser.parseString(xmlContent, function(err, result){
+        var subCat = req.slot("Subcategory");
+        var curCategory;
+        var curSub;
+        var items = "";
+        var found = false;
+
+        for(var i = 0; i < result.menu.category.length; i++){
+          curCategory = result.menu.category[i];
+          if(curCategory.name[0].toLowerCase() == category){
+            var numSubCat = curCategory.subcategory.length;
+              for(var j = 0; j < numSubCat; j++){
+                curSub = result.menu.category[i].subcategory[j];
+                if(curSub.name[0].toLowerCase() == subCat){
+                  found = true;
+                  try{
+                    var numItems = curSub.item.length;
+                    for(var k = 0; k < numItems; k++){
+                      items += curSub.item[k];
+
+                      //handle commas
+                      if(k == numItems - 2){
+                        if(numItems == 2){
+                          items += " or ";
+                        }
+                        else{
+                            items += ", or ";
+                        }
+                      }
+                      else if(k != numItems - 1){
+                        items += ", ";
+                      }
+                    } //end for traversing items
+                  } //end try
+                  catch(err){
+                    res.say("There are no " + subCat + " items on the menu. Please try again.");
+                    found = false;
+                  }
+              } //if subcat name = current
+
+            } //for loop traversing subcategories
+          } //if category name = current
+
+        } //for loop traversing categories
+
+        if(found){
+          res.say("The " + subCat + " offered are " + items + ". Would you like to hear the items in a different subcategory?");
         }
-    }else{
-      console.log("Subcategory undefined");
+        else{
+          res.say("I didn't recognize that category please try again.");
+        }
+      }); //end parse
+    } //end if state = 2
+    else{
+      res.say("That wasn't one of the provided options, please try again.");
     }
-  }else{
-    res.say("That wasn't one of the provided options, please try again.")
   }
-});
+); //end subcategory intent
 
 app.intent('BackIntent', {
   "slots":{},
-  "utterances":["BackIntent back",
-                "BackIntent go back",
-                "BackIntent back a page",
-                "BackIntent previous page"]
+  "utterances": utterances.backIntentUtterances
 },function(req, res){
     if(stage > 0){
       stage = stage - 1;
       if(stage == 1){
-        res.say("Would you like to hear the menu for breakfast, lunch, dinner, beverages, or dessert?");
-      }else if(stage == 2){
-        res.say("You can choose from one of these subcategories [appropriate subcategory here]");
+        parser.parseString(xmlContent, function(err, result){
+          var categories = "";
+          var curCategory;
+          var numCategories = result.menu.category.length;
+          for(var i = 0; i < numCategories; i++){
+            curCat = result.menu.category[i];
+            categories += curCat.name[0].toLowerCase();
+            if(i == numCategories - 2){
+              if(numCategories == 2){
+                categories += " or ";
+              }
+              else{
+                  categories += ", or ";
+              }
+            }
+            else if(i != numCategories - 1){
+              categories += ", ";
+            }
+          } //end category traversing for loop
+
+          res.say('Would you like to hear the menu for ' + categories + '?');
+        }); //end parsing
       }
     }else{
       res.say("I can't go back any further.");
@@ -114,9 +224,7 @@ app.intent('BackIntent', {
 
 app.intent('CancelIntent', {
   "slots":{},
-  "utterances":["CancelIntent cancel",
-                "CancelIntent stop",
-                "CancelIntent done"]
+  "utterances": utterances.cancelIntentUtterances
 },function(req, res){
     res.say('Closing menu reader');
     //app.close() or something somewhere?
@@ -125,7 +233,7 @@ app.intent('CancelIntent', {
 
 app.intent('HelpIntent', {
   "slots":{},
-  "utterances":["MenuIntent help"]
+  "utterances": utterances.menuIntentUtterances
 },function(req, res){
     res.say('You can say things like what is on the menu, then choose a category to hear. You can also ' +
             'say cancel, stop, or done to exit');
@@ -134,102 +242,3 @@ app.intent('HelpIntent', {
 
 
 module.exports = app;
-
-// Extend AlexaSkill
-// HowTo.prototype = Object.create(AlexaSkill.prototype);
-// HowTo.prototype.constructor = HowTo;
-//
-// HowTo.prototype.eventHandlers.onLaunch = function (launchRequest, session, response) {
-//     var speechText = "Welcome to the Menu Reader. Ask me what the menu is.";
-//     // If the user either does not reply to the welcome message or says something that is not
-//     // understood, they will be prompted again with this text.
-//     var repromptText = "For instructions on what you can say, please say help me.";
-//     response.ask(speechText, repromptText);
-// };
-//
-// HowTo.prototype.eventHandlers.onIntent = function (launchRequest, session, response) {
-//
-// }
-//
-// HowTo.prototype.intentHandlers = {
-//     "MenuIntent": function (intent, session, response) {
-//
-//         speech = "The menu for today is eggs and bacon";
-//
-//         // speechOutput = {
-//         //         speech: speech,
-//         //         type: AlexaSkill.speechOutputType.PLAIN_TEXT
-//         //     };
-//         //     repromptOutput = {
-//         //         speech: "What else can I help with?",
-//         //         type: AlexaSkill.speechOutputType.PLAIN_TEXT
-//         //     };
-//             //response.ask(speechOutput, repromptOutput);
-//             response.tell(speech);
-//         //}
-//
-//
-//         /*var itemSlot = intent.slots.Item,
-//             itemName;
-//         if (itemSlot && itemSlot.value){
-//             itemName = itemSlot.value.toLowerCase();
-//         }
-//
-//         var cardTitle = "Recipe for " + itemName,
-//             recipe = recipes[itemName],
-//             speechOutput,
-//             repromptOutput;
-//         if (recipe) {
-//             speechOutput = {
-//                 speech: recipe,
-//                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
-//             };
-//             response.tellWithCard(speechOutput, cardTitle, recipe);
-//         } else {
-//             var speech;
-//             if (itemName) {
-//                 speech = "I'm sorry, I currently do not know the recipe for " + itemName + ". What else can I help with?";
-//             } else {
-//                 speech = "I'm sorry, I currently do not know that recipe. What else can I help with?";
-//             }
-//             speechOutput = {
-//                 speech: speech,
-//                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
-//             };
-//             repromptOutput = {
-//                 speech: "What else can I help with?",
-//                 type: AlexaSkill.speechOutputType.PLAIN_TEXT
-//             };
-//             response.ask(speechOutput, repromptOutput);
-//         }*/
-//     },
-//
-//     "AMAZON.StopIntent": function (intent, session, response) {
-//         var speechOutput = "Goodbye";
-//         response.tell(speechOutput);
-//     },
-//
-//     "AMAZON.CancelIntent": function (intent, session, response) {
-//         var speechOutput = "Goodbye";
-//         response.tell(speechOutput);
-//     },
-//
-//     "AMAZON.HelpIntent": function (intent, session, response) {
-//         var speechText = "You can ask me what the menu is or exit by saying cancel or stop";
-//         var repromptText = "You can ask me what the menu is or exit by saying cancel or stop";
-//         var speechOutput = {
-//             speech: speechText,
-//             type: AlexaSkill.speechOutputType.PLAIN_TEXT
-//         };
-//         var repromptOutput = {
-//             speech: repromptText,
-//             type: AlexaSkill.speechOutputType.PLAIN_TEXT
-//         };
-//         response.ask(speechOutput, repromptOutput);
-//     }
-// };
-//
-// exports.handler = function (event, context) {
-//     var howTo = new HowTo();
-//     howTo.execute(event, context);
-// };

@@ -1,0 +1,49 @@
+<menu>
+  <category>
+    <name>Breakfast</name>
+    <subcategory>
+      <name>Juice</name>
+      <item>Orange</item>
+      <item>Apple</item>
+      <item>Cranberry</item>
+    </subcategory>
+    <subcategory>
+      <name>Fruit</name>
+      <item>Banana</item>
+      <item>Fresh Fruit Cup</item>
+      <item>Canned Fruit Cup</item>
+      <item>Mandarin Oranges</item>
+    </subcategory>
+  </category>
+
+  <category>
+    <name>Lunch and Dinner</name>
+    <subcategory>
+      <name>Hot Entrees</name>
+      <item>Roast Turkey Breast with Gravy</item>
+      <item>Baked Chicken Breast</item>
+      <item>Chicken Tenders</item>
+    </subcategory>
+    <subcategory>
+      <name>Starches</name>
+      <item>Mashed Potatoes</item>
+      <item>Steamed Rice</item>
+      <item>Seashell Noodles</item>
+    </subcategory>
+    <subcategory>
+      <name>Soups</name>
+      <item>Chicken Noodle</item>
+    </subcategory>
+  </category>
+
+  <category>
+    <name>Dessert</name>
+    <subcategory>
+      <name>Cookies</name>
+    </subcategory>
+  </category>
+
+  <category>
+    <name>Beverages</name>
+  </category>
+</menu>
