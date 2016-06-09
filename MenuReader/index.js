@@ -29,17 +29,19 @@ function isInArray(element, list){
 
 app.intent('MenuIntent', {
   "slots":{},
-  "utterances": ["MenuReader what is the menu",
-                "MenuReader read me the menu",
-                "MenuReader what can I have to eat",
-                "MenuReader what's on the menu"]
+  "utterances": ["MenuIntent what is the menu",
+                "MenuIntent read me the menu",
+                "MenuIntent what can I have to eat",
+                "MenuIntent what's on the menu"]//so the user is able to go back to the top of the tree of questions
 }, function(req, res){
       res.say('Would you like to hear the menu for breakfast, lunch, dinner, beverages, or dessert?');
+      stage = 1;
 });
 
 app.intent('CategoryIncludedIntent', {
   "slots":{"Category":"LIST_OF_CATEGORIES"},
-  "utterances": ["CategoryIncludedIntent what's for {Category}",
+  "utterances": ["{Category}",
+                  "CategoryIncludedIntent what's for {Category}",
                   "CategoryIncludedIntent what is for {Category}",
                   "CategoryIncludedIntent read me the menu for  {Category}",
                   "CategoryIncludedIntent read me the {Category}"]
@@ -58,6 +60,9 @@ app.intent('CategoryIncludedIntent', {
         res.say("I didn't recognize that category please try again.");
       }
       categoryChoice = LIST_OF_CATEGORIES.indexOf(category);//set the choice to the index of the category picked
+      if(categoryChoice != -1){
+        stage = 2;
+      }
     }else{
       res.say("I didn't reconize that category, please try again.");
     }
@@ -71,21 +76,61 @@ app.intent('SubcategoryIntent', {
                 "SubcategoryIntent what are the {Subcategory} choices",
                 "SubcategoryIntent I want to hear about {Subcategory}"]
 }, function(req, res){
+    if(stage == 2){
       var subcategory = req.slot("Subcategory");
-      if(subcategory == "burgers"){
-        res.say('The burger options are ketchup, pickles, and mustard.');
-      }
+      if(subcategory != undefined){
+        if(subcategory == "burgers"){
+          res.say('The burger options are ketchup, pickles, and mustard. What subcategory would you like to hear?');
+          stage = 2;
+        }
+    }else{
+      console.log("Subcategory undefined");
+    }
+  }else{
+    res.say("That wasn't one of the provided options, please try again.")
+  }
 });
+
+app.intent('BackIntent', {
+  "slots":{},
+  "utterances":["BackIntent back",
+                "BackIntent go back",
+                "BackIntent back a page",
+                "BackIntent previous page"]
+},function(req, res){
+    if(stage > 0){
+      stage = stage - 1;
+      if(stage == 1){
+        res.say("Would you like to hear the menu for breakfast, lunch, dinner, beverages, or dessert?");
+      }else if(stage == 2){
+        res.say("You can choose from one of these subcategories [appropriate subcategory here]");
+      }
+    }else{
+      res.say("I can't go back any further.");
+    }
+    //app.close() or something somewhere?
+  }
+);
+
+app.intent('CancelIntent', {
+  "slots":{},
+  "utterances":["CancelIntent cancel",
+                "CancelIntent stop",
+                "CancelIntent done"]
+},function(req, res){
+    res.say('Closing menu reader');
+    //app.close() or something somewhere?
+  }
+);
 
 app.intent('HelpIntent', {
   "slots":{},
   "utterances":["MenuIntent help"]
 },function(req, res){
-    res.say('You can say things like what is on the menu, then choose a category to hear');
+    res.say('You can say things like what is on the menu, then choose a category to hear. You can also ' +
+            'say cancel, stop, or done to exit');
   }
 );
-
-
 
 
 module.exports = app;
